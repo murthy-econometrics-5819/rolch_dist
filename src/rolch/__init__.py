@@ -22,6 +22,7 @@ from .distributions import (
     DistributionJSU,
     DistributionNormal,
     DistributionT,
+    DistributionExponential, 
 )
 from .estimators import OnlineGamlss, OnlineLasso, OnlineLinearModel
 from .gram import (
