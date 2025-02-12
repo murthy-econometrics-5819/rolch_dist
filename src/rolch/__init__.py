@@ -75,6 +75,7 @@ __all__ = [
     "DistributionT",
     "DistributionJSU",
     "DistributionGamma",
+    "DistributionExponential",
     "init_forget_vector",
     "init_gram",
     "update_gram",
