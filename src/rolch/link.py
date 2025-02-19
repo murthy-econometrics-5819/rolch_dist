@@ -218,7 +218,7 @@ class LogitLink(LinkFunction):
         return (1 / 1 + np.exp**(-x))
 
     def inverse_derivative(self, x: np.ndarray) -> np.ndarray:
-        return np.exp**(-x)/ ((1 + np.exp**(-x))^2)
+        return np.exp**(-x)/ ((1 + np.exp**(-x))**2)
 
     def link_derivative(self, x: np.ndarray) -> np.ndarray:
         return 1 / (x(1-x))
