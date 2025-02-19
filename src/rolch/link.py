@@ -203,6 +203,31 @@ class LogIdentLink(LinkFunction):
     def link_second_derivative(self, x) -> np.ndarray:
         return super().link_second_derivative(x)
 
+class LogitLink(LinkFunction):
+    """The Logit Link function.
+
+    The logit-link function is defined as \(g(x) = \log (x/ (1+x))\).
+    """
+    def __init__(self):
+        pass
+
+    def link(self, x: np.ndarray) -> np.ndarray:
+        return np.log(np.fmax((x/(1+x)), LOG_LOWER_BOUND))
+
+    def inverse(self, x: np.ndarray) -> np.ndarray:
+        return (1 / 1 + np.exp**(-x))
+
+    def inverse_derivative(self, x: np.ndarray) -> np.ndarray:
+        return np.exp**(-x)/ ((1 + np.exp**(-x))^2)
+
+    def link_derivative(self, x: np.ndarray) -> np.ndarray:
+        return 1 / (x(1-x))
+
+    def link_second_derivative(self, x: np.ndarray) -> np.ndarray:
+        return -(1- 2*x)/(x**2 (1 - x)**2)
+
+
+
 
 __all__ = [
     "LogLink",
@@ -213,4 +238,5 @@ __all__ = [
     "SqrtLink",
     "SqrtShiftValueLink",
     "SqrtShiftTwoLink",
+    "LogitLink",
 ]

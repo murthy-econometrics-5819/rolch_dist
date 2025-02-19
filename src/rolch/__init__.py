@@ -23,6 +23,7 @@ from .distributions import (
     DistributionNormal,
     DistributionT,
     DistributionExponential, 
+    DistributionBeta, 
 )
 from .estimators import OnlineGamlss, OnlineLasso, OnlineLinearModel
 from .gram import (
@@ -47,6 +48,7 @@ from .link import (
     SqrtLink,
     SqrtShiftTwoLink,
     SqrtShiftValueLink,
+    LogitLink,
 )
 from .methods import LassoPathMethod, OrdinaryLeastSquaresMethod
 from .scaler import OnlineScaler
@@ -77,6 +79,7 @@ __all__ = [
     "DistributionJSU",
     "DistributionGamma",
     "DistributionExponential",
+    "DistributionBeta",
     "init_forget_vector",
     "init_gram",
     "update_gram",
