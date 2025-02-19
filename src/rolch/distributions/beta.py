@@ -109,7 +109,7 @@ class DistributionBeta(Distribution):
 
         if param == 1:
             # SIGMA
-            return -(4/(sigma**6))*((mu**2) * spc.trigamma(mu*(1-sigma**2)/(sigma**2)) + ((1-mu)^2) * spc.trigamma((1-mu)*(1-sigma**2)/(sigma**2))
+            return -(4/(sigma**6))*((mu**2) * spc.trigamma(mu*(1-sigma**2)/(sigma**2)) + ((1-mu)**2) * spc.trigamma((1-mu)*(1-sigma**2)/(sigma**2))
                 -spc.trigamma((1-sigma**2)/(sigma**2)))
 
     def dl2_dpp(self, y, theta, params=(0, 1)):  
