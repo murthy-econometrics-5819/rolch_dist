@@ -71,6 +71,7 @@ __all__ = [
     "LogIdentLink",
     "LogShiftTwoLink",
     "LogShiftValueLink",
+    "LogitLink",
     "SqrtLink",
     "SqrtShiftValueLink",
     "SqrtShiftTwoLink",
