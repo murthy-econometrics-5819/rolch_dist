@@ -10,13 +10,16 @@ class DistributionBeta(Distribution):
     """The Beta Distribution for GAMLSS.
 
     The distribution function is defined as in GAMLSS as:
-    $$ 
-    f(y|\mu,\sigma)= \\frac{\Gamma(\\frac{\mu(1-\mu)}{\sigma^2} - 1)}
-    {\Gamma(\mu (\\frac{\mu(1-\mu)}{\sigma^2} - 1)) 
-    \Gamma((1-\mu) (\\frac{\mu(1-\mu)}{\sigma^2} - 1))}
-    x^{\mu (\\frac{\mu(1-\mu)}{\sigma^2} - 1) - 1} 
-    (1 - x)^{(1-\mu) (\\frac{\mu(1-\mu)}{\sigma^2} - 1) - 1}
     $$
+    f(y|\mu,\sigma)=\\frac{\Gamma(\frac{1 - \sigma^2}{\sigma^2})}
+	{
+	\Gamma(\\frac{\mu (1 - \sigma^2)}{\sigma^2})
+	\Gamma(\\frac{(1 - \mu) (1 - \sigma^2)}{\sigma^2})}
+	y^{\\frac{\mu (1 - \sigma^2)}{\sigma^2} - 1}
+	(1-y)^{\\frac{(1 - \mu) (1 - \sigma^2)}{\sigma^2} - 1}
+    $$
+
+
 
     with the location and shape parameters $\mu, \sigma > 0$.
 
@@ -25,20 +28,20 @@ class DistributionBeta(Distribution):
 
         This parameterization is different to the `scipy.stats.gamma(alpha, loc, scale)` parameterization.
 
-        We can use `DistributionGamma().gamlss_to_scipy(mu, sigma)` to map the distribution parameters to scipy.
+        We can use `DistributionBeta().gamlss_to_scipy(mu, sigma)` to map the distribution parameters to scipy.
 
     The `scipy.stats.beta()` distribution is defined as:
     $$
-    f(x, \\alpha, \\beta) = \\frac{\Gamma(\\alpha + \\beta) x^{\\alpha - 1} {1 - x}^{\\beta - 1}}{\Gamma(\\alpha) \Gamma(\\beta)}
+    f(x, \\alpha, \\beta) = \\frac{\Gamma(\\alpha + \\beta) x^{\\alpha - 1} {(1 - x)}^{\beta - 1}}{\Gamma(\\alpha) \Gamma(\\beta)}
     $$
 
     with the paramters $\\alpha, \\beta >0$. The parameters can be mapped as follows:
     $$
-    \\alpha = -\mu (\sigma^2 + \mu^2 - \mu) / (\sigma^2) \Leftrightarrow \mu = \\alpha / (\\alpha + \\beta)
+    \\alpha = \mu (1 - \sigma^2) / \sigma^2 \Leftrightarrow \mu = \\alpha / (\\alpha + \\beta)
     $$
     and
     $$
-    \\beta = (\sigma^2 + \mu^2 - \mu) (\mu - 1) / (\sigma^2) \Leftrightarrow \sigma = \sqrt{(\\ alpha \\beta) / ( (\\alpha + \\beta)^2 (\\alpha + \\beta + 1) )}
+    \\beta = (1 - \mu) (1 - \sigma^2)/ \sigma^2 \Leftrightarrow \sigma = \sqrt{((\\alpha + \\beta + 1) )}
     $$
 
 
@@ -64,7 +67,7 @@ class DistributionBeta(Distribution):
         sigma = theta[:, 1]
         return mu, sigma
 
-    @staticmethod #####this has to be changed!!!!
+    @staticmethod 
     def gamlss_to_scipy(mu: np.ndarray, sigma: np.ndarray):
         """Map GAMLSS Parameters to scipy parameters.
 
@@ -75,17 +78,18 @@ class DistributionBeta(Distribution):
         Returns:
             tuple: Tuple of (alpha, loc, scale) for scipy.stats.gamma(alpha, loc, scale)
         """
-        alpha = 1 / sigma**2
-        beta = 1 / (sigma**2 * mu)
+        alpha = mu*(1 - sigma**2)/sigma**2
+        beta = (1-mu)*(1 - sigma**2)/sigma**2
         loc = 0
-        scale = 1 / beta
+        scale = 1 / alpha + beta + 1
         return alpha, loc, scale
 
-    def dl1_dp1(self, y, theta, param=0):  ###this has to be changed!!!!
+    def dl1_dp1(self, y, theta, param=0):  
         mu, sigma = self.theta_to_params(theta)
 
         if param == 0:
-            return (y - mu) / ((sigma**2) * (mu**2))
+            return ((1-sigma**2)/(sigma**2))*( -spc.digamma(mu*(1-sigma**2)/(sigma**2))
+                + spc.digamma((1-mu)*(1-sigma**2)/(sigma**2)) + np.log(y) - np.log(1-y) )
 
         if param == 1:
             return (2 / sigma**3) * (
@@ -97,19 +101,22 @@ class DistributionBeta(Distribution):
                 + spc.digamma(1 / (sigma**2))
             )
 
-    def dl2_dp2(self, y, theta, param=0):    ###this has to be changed!!!!
+    def dl2_dp2(self, y, theta, param=0):    
         mu, sigma = self.theta_to_params(theta)
         if param == 0:
             # MU
-            return -1 / ((sigma**2) * (mu**2))
+            return -(((1-sigma**2)^2)/(sigma**4))*(spc.trigamma(mu*(1-sigma**2)/(sigma**2)) + spc.trigamma((1-mu)*(1-sigma**2)/(sigma**2)))
 
         if param == 1:
             # SIGMA
-            return (4 / sigma**4) - (4 / sigma**6) * spc.polygamma(1, (1 / sigma**2))
+            return -(4/(sigma**6))*((mu**2) * spc.trigamma(mu*(1-sigma**2)/(sigma**2)) + ((1-mu)^2) * spc.trigamma((1-mu)*(1-sigma**2)/(sigma**2))
+                -spc.trigamma((1-sigma**2)/(sigma**2)))
 
-    def dl2_dpp(self, y, theta, params=(0, 1)):    ###this has to be changed!!!!
+    def dl2_dpp(self, y, theta, params=(0, 1)):  
+        mu, sigma = self.theta_to_params(theta)
         if sorted(params) == [0, 1]:
-            return np.zeros_like(y)
+            return (2*(1-sigma**2)/(sigma**5))*(mu* spc.trigamma(mu*(1-sigma**2)/(sigma**2)) 
+                - (1-mu)* spc.trigamma((1-mu)*(1-sigma**2)/(sigma**2)))
 
     def link_function(self, y, param=0):   ###this has to be changed!!!!
         return self.links[param].link(y)
