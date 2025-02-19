@@ -3,7 +3,7 @@ import scipy.special as spc
 import scipy.stats as st
 
 from rolch.base import Distribution, LinkFunction
-from rolch.link import LogLink
+from rolch.link import LogLink, LogitLink
 
 
 class DistributionBeta(Distribution):
@@ -51,7 +51,7 @@ class DistributionBeta(Distribution):
     """
 
     def __init__(
-        self, loc_link: LinkFunction = LogLink(), scale_link: LinkFunction = LogLink()
+        self, loc_link: LinkFunction = LogitLink(), scale_link: LinkFunction = LogLink()
     ):
         self.loc_link = loc_link
         self.scale_link = scale_link

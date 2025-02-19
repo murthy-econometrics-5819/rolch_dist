@@ -11,5 +11,5 @@ __all__ = [
     "DistributionJSU",
     "DistributionGamma",
     "DistributionExponential",
-    "DistributionBeta"
+    "DistributionBeta",
 ]
