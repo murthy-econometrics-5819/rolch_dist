@@ -215,10 +215,10 @@ class LogitLink(LinkFunction):
         return np.log(np.fmax((x/(1+x)), LOG_LOWER_BOUND))
 
     def inverse(self, x: np.ndarray) -> np.ndarray:
-        return (1 / 1 + np.exp**(-x))
+        return (1 / 1 + np.exp(-x))
 
     def inverse_derivative(self, x: np.ndarray) -> np.ndarray:
-        return np.exp**(-x)/ ((1 + np.exp**(-x))**2)
+        return np.exp(-x)/ ((1 + np.exp(-x))**2)
 
     def link_derivative(self, x: np.ndarray) -> np.ndarray:
         return 1 / (x(1-x))
