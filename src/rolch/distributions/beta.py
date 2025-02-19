@@ -3,7 +3,7 @@ import scipy.special as spc
 import scipy.stats as st
 
 from rolch.base import Distribution, LinkFunction
-from rolch.link import LogLink, LogitLink
+from rolch.link import LogitLink, LogLink
 
 
 class DistributionBeta(Distribution):
