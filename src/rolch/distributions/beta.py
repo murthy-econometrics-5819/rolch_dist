@@ -81,7 +81,7 @@ class DistributionBeta(Distribution):
         alpha = mu*(1 - sigma**2)/sigma**2
         beta = (1-mu)*(1 - sigma**2)/sigma**2
         loc = 0
-        scale = 1 / alpha + beta + 1
+        scale = 1 / (alpha + beta + 1)
         return alpha, loc, scale
 
     def dl1_dp1(self, y, theta, param=0):  
