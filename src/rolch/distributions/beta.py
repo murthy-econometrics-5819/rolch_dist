@@ -105,7 +105,7 @@ class DistributionBeta(Distribution):
         mu, sigma = self.theta_to_params(theta)
         if param == 0:
             # MU
-            return -(((1-sigma**2)^2)/(sigma**4))*(spc.trigamma(mu*(1-sigma**2)/(sigma**2)) + spc.trigamma((1-mu)*(1-sigma**2)/(sigma**2)))
+            return -(((1-sigma**2)**2)/(sigma**4))*(spc.trigamma(mu*(1-sigma**2)/(sigma**2)) + spc.trigamma((1-mu)*(1-sigma**2)/(sigma**2)))
 
         if param == 1:
             # SIGMA
