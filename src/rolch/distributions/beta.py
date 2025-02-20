@@ -105,18 +105,18 @@ class DistributionBeta(Distribution):
         mu, sigma = self.theta_to_params(theta)
         if param == 0:
             # MU
-            return -(((1-sigma**2)**2)/(sigma**4))*(spc.trigamma(mu*(1-sigma**2)/(sigma**2)) + spc.trigamma((1-mu)*(1-sigma**2)/(sigma**2)))
+            return -(((1-sigma**2)**2)/(sigma**4))*(spc.polygamma(2, mu*(1-sigma**2)/(sigma**2)) + spc.polygamma(2, (1-mu)*(1-sigma**2)/(sigma**2)))
 
         if param == 1:
             # SIGMA
-            return -(4/(sigma**6))*((mu**2) * spc.trigamma(mu*(1-sigma**2)/(sigma**2)) + ((1-mu)**2) * spc.trigamma((1-mu)*(1-sigma**2)/(sigma**2))
-                -spc.trigamma((1-sigma**2)/(sigma**2)))
+            return -(4/(sigma**6))*((mu**2) * spc.polygamma(2, mu*(1-sigma**2)/(sigma**2)) + ((1-mu)**2) * spc.polygamma(2, (1-mu)*(1-sigma**2)/(sigma**2))
+                -spc.polygamma(2, (1-sigma**2)/(sigma**2)))
 
     def dl2_dpp(self, y, theta, params=(0, 1)):  
         mu, sigma = self.theta_to_params(theta)
         if sorted(params) == [0, 1]:
-            return (2*(1-sigma**2)/(sigma**5))*(mu* spc.trigamma(mu*(1-sigma**2)/(sigma**2)) 
-                - (1-mu)* spc.trigamma((1-mu)*(1-sigma**2)/(sigma**2)))
+            return (2*(1-sigma**2)/(sigma**5))*(mu* spc.polygamma(2, mu*(1-sigma**2)/(sigma**2)) 
+                - (1-mu)* spc.polygamma(2, (1-mu)*(1-sigma**2)/(sigma**2)))
 
     def link_function(self, y, param=0):   ###this has to be changed!!!!
         return self.links[param].link(y)
