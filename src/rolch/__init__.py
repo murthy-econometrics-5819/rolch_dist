@@ -25,6 +25,7 @@ from .distributions import (
     DistributionExponential, 
     DistributionBeta, 
 )
+from .error import OutOfSupportError
 from .estimators import OnlineGamlss, OnlineLasso, OnlineLinearModel
 from .gram import (
     init_forget_vector,
@@ -56,10 +57,13 @@ from .utils import (
     calculate_asymptotic_training_length,
     calculate_effective_training_length,
 )
+from .warnings import OutOfSupportWarning
 
 __version__ = version("rolch")
 
 __all__ = [
+    "OutOfSupportWarning",
+    "OutOfSupportError",
     "OnlineScaler",
     "OnlineGamlss",
     "OnlineLinearModel",

@@ -1,6 +1,8 @@
+from typing import Tuple
+
 import numpy as np
 
-from rolch.base import LinkFunction
+from .base import LinkFunction
 
 LOG_LOWER_BOUND = 1e-25
 EXP_UPPER_BOUND = 25
@@ -13,6 +15,8 @@ class LogLink(LinkFunction):
 
     The log-link function is defined as \(g(x) = \log(x)\).
     """
+
+    link_support = (np.nextafter(0, 1), np.inf)
 
     def __init__(self):
         pass
@@ -42,6 +46,8 @@ class IdentityLink(LinkFunction):
 
     The identity link is defined as \(g(x) = x\).
     """
+
+    link_support = (-np.inf, np.inf)
 
     def __init__(self):
         pass
@@ -74,6 +80,10 @@ class LogShiftValueLink(LinkFunction):
 
     def __init__(self, value: float):
         self.value = value
+
+    @property
+    def link_support(self) -> Tuple[float, float]:
+        return (self.value + np.nextafter(0, 1), np.inf)
 
     def link(self, x: np.ndarray) -> np.ndarray:
         return np.log(x - self.value + LOG_LOWER_BOUND)
@@ -114,6 +124,8 @@ class SqrtLink(LinkFunction):
     The square root link function is defined as $$g(x) = \sqrt(x)$$.
     """
 
+    link_support = (np.nextafter(0, 1), np.inf)
+
     def __init__(self):
         pass
 
@@ -145,6 +157,10 @@ class SqrtShiftValueLink(LinkFunction):
 
     def __init__(self, value: float):
         self.value = value
+
+    @property
+    def link_support(self) -> Tuple[float, float]:
+        return (self.value + np.nextafter(0, 1), np.inf)
 
     def link(self, x: np.ndarray) -> np.ndarray:
         return np.sqrt(x - self.value + LOG_LOWER_BOUND)
@@ -184,6 +200,8 @@ class LogIdentLink(LinkFunction):
     used to avoid the exponential inverse for large values while keeping the log-behaviour in small ranges. This can stabilize
     the estimation procedure.
     """
+
+    link_support = (np.nextafter(0, 1), np.inf)
 
     def __init__(self):
         pass
@@ -238,5 +256,5 @@ __all__ = [
     "SqrtLink",
     "SqrtShiftValueLink",
     "SqrtShiftTwoLink",
-    "LogitLink",
+    "SqrtShiftTwoLink",
 ]

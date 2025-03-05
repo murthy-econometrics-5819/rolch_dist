@@ -4,9 +4,9 @@ from typing import Any, Dict, Optional, Tuple, Union
 
 import numpy as np
 
-from rolch import HAS_PANDAS, HAS_POLARS
-
+from .. import HAS_PANDAS, HAS_POLARS
 from ..base import Distribution, EstimationMethod, Estimator
+from ..error import OutOfSupportError
 from ..gram import init_forget_vector
 from ..information_criteria import select_best_model_by_information_criterion
 from ..methods import get_estimation_method
@@ -30,7 +30,7 @@ class OnlineGamlss(Estimator):
         method: Union[
             str, EstimationMethod, Dict[int, str], Dict[int, EstimationMethod]
         ] = "ols",
-        scale_inputs: bool = True,
+        scale_inputs: bool | np.ndarray = True,
         fit_intercept: Union[bool, Dict[int, bool]] = True,
         regularize_intercept: Union[bool, Dict[int, bool]] = False,
         ic: Union[str, Dict] = "aic",
@@ -55,6 +55,20 @@ class OnlineGamlss(Estimator):
         sensible range (we don't want, e.g. negative standard deviations), and $\eta_k$ is the predictor (on the
         space of the link function). The model is fitted using iterative re-weighted least squares (IRLS).
 
+
+        !!! note Tips and Tricks
+            If you're facing issues with non-convergence and/or matrix inversion problems, please enable the `debug` mode and increase the
+            logging level by increasing `verbose`.
+            In debug mode, the estimator will save the weights, working vectors, derivatives each iteration in a
+            according dictionary, i.e. self._debug_weights.
+            The keys are composed of a tuple of ints of `(parameter, outer_iteration, inner_iteration)`.
+            Very small and/or very large weights (implicitly second derivatives) can be a sign that either start values are not chosen appropriately or
+            that the distributional assumption does not fit the data well.
+
+        !!! warning Debug Mode
+            Please don't use debug more for production models since it saves the `X` matrix and its scaled counterpart, so you will get large
+            estimator objects.
+
         Args:
             distribution (rolch.Distribution): The parametric distribution.
             equation (Dict): The modelling equation. Follows the schema `{parameter[int]: column_identifier}`, where column_identifier can be either the strings `'all'`, `'intercept'` or a np.array of ints indicating the columns.
@@ -72,7 +86,18 @@ class OnlineGamlss(Estimator):
             rel_tol_inner (float, optional): Relative tolerance on the deviance in the inner fit. Defaults to 1e-5.
             rss_tol_inner (float, optional): Tolerance for increasing RSS in the inner fit. Defaults to 1.5.
             verbose (int, optional): Verbosity level. Level 0 will print no messages. Level 1 will print messages according to the start and end of each fit / update call and on finished outer iterations. Level 2 will print messages on each parameter fit in each outer iteration. Level 3 will print messages on each inner iteration. Defaults to 0.
-            debug (bool, optional): Whether to enable debug mode. Defaults to False.
+            debug (bool, optional): Enable debug mode. Debug mode will save additional data to the estimator object.
+                Currently, we save
+
+                    * self._debug_X_dict
+                    * self._debug_X_scaled
+                    * self._debug_weights
+                    * self._debug_working_vectors
+                    * self._debug_dl1dlp1
+                    * self._debug_dl2dlp2
+                    * self._debug_eta
+
+                to the the estimator. Debug mode works in batch and online settings. Note that debug mode is not recommended for production use. Defaults to False.
         """
         self.distribution = distribution
         self.equation = self._process_equation(equation)
@@ -85,7 +110,7 @@ class OnlineGamlss(Estimator):
         self._process_attribute(method, default="ols", name="method")
         self._method = {p: get_estimation_method(m) for p, m in self.method.items()}
 
-        self.scaler = OnlineScaler(do_scale=scale_inputs, intercept=False)
+        self.scaler = OnlineScaler(to_scale=scale_inputs)
         self.do_scale = scale_inputs
 
         # These are global for all distribution parameters
@@ -234,9 +259,21 @@ class OnlineGamlss(Estimator):
                     J[p] = X.shape[1] + int(self.fit_intercept[p])
                 if self.equation[p] == "intercept":
                     J[p] = 1
-            elif isinstance(self.equation[p], np.ndarray) or isinstance(
-                self.equation[p], list
-            ):
+            elif isinstance(self.equation[p], np.ndarray):
+                if np.issubdtype(self.equation[p].dtype, bool):
+                    if self.equation[p].shape[0] != X.shape[1]:
+                        raise ValueError(f"Shape does not match for param {p}.")
+                    J[p] = np.sum(self.equation[p]) + int(self.fit_intercept[p])
+                elif np.issubdtype(self.equation[p].dtype, np.integer):
+                    if self.equation[p].max() >= X.shape[1]:
+                        raise ValueError(f"Shape does not match for param {p}.")
+                    J[p] = self.equation[p].shape[0] + int(self.fit_intercept[p])
+                else:
+                    raise ValueError(
+                        "If you pass a np.ndarray in the equation, "
+                        "please make sure it is of dtype bool or int."
+                    )
+            elif isinstance(self.equation[p], list):
                 J[p] = len(self.equation[p]) + int(self.fit_intercept[p])
             else:
                 raise ValueError("Something unexpected happened")
@@ -379,6 +416,46 @@ class OnlineGamlss(Estimator):
 
         return beta, beta_path, rss
 
+    def _validate_inputs(self, X: np.ndarray, y: np.ndarray):
+        """Validate the input matrices X and y.
+
+        Args:
+            X (np.ndarray): Input matrix $X$
+            y (np.ndarray): Response vector $y$.
+
+        Raises:
+            OutOfSupportError: If the values of $y$ are below the range of the distribution.
+            OutOfSupportError: If the values of $y$ are beyond the range of the distribution.
+            ValueError: If `X` and `y` are not the same length.
+            ValueError: If `X` or `y` contain NaN values.
+            ValueError: If `X` or `y` contain infinite values.
+        """
+        if np.any(y < self.distribution.distribution_support[0]):
+            raise OutOfSupportError(
+                message=(
+                    "y contains values below the distribution's support. "
+                    f"The smallest value in y is {np.min(y)}. "
+                    f"The support of the distribution is {str(self.distribution.distribution_support)}."
+                )
+            )
+        if np.any(y > self.distribution.distribution_support[1]):
+            raise OutOfSupportError(
+                message=(
+                    "Y contains values larger than the distribution's support. "
+                    f"The smallest value in y is {np.max(y)}. "
+                    f"The support of the distribution is {str(self.distribution.distribution_support)}."
+                ),
+            )
+
+        if y.shape[0] != X.shape[0]:
+            raise ValueError("X and y should have the same length.")
+
+        if np.any(np.isnan(y)) or np.any(np.isnan(X)):
+            raise ValueError("X and y should not contain Nan.")
+
+        if not (np.all(np.isfinite(y)) & np.all(np.isfinite(X))):
+            raise ValueError("X and y should contain only finite values.")
+
     def _make_initial_fitted_values(self, y: np.ndarray) -> np.ndarray:
         out = np.stack(
             [
@@ -409,6 +486,8 @@ class OnlineGamlss(Estimator):
             sample_weight (Optional[np.ndarray], optional): User-defined sample weights. Defaults to None.
             beta_bounds (Dict[int, Tuple], optional): Bounds for the $\beta$ in the coordinate descent algorithm. The user needs to provide a `dict` with a mapping of tuples to distribution parameters 0, 1, 2, and 3 potentially. Defaults to None.
         """
+
+        self._validate_inputs(X, y)
         self.n_observations = y.shape[0]
         self.n_training = {
             p: calculate_effective_training_length(self.forget[p], self.n_observations)
@@ -432,8 +511,13 @@ class OnlineGamlss(Estimator):
         }
 
         if self.debug:
-            self.X_dict = X_dict
-            self.X_scaled = X_scaled
+            self._debug_X_dict = X_dict
+            self._debug_X_scaled = X_scaled
+            self._debug_weights = {}
+            self._debug_working_vectors = {}
+            self._debug_dl1dlp1 = {}
+            self._debug_dl2dlp2 = {}
+            self._debug_eta = {}
 
         self.rss = {i: 0 for i in range(self.distribution.n_params)}
 
@@ -501,6 +585,8 @@ class OnlineGamlss(Estimator):
             y (np.ndarray): Response variable $Y$.
             sample_weight (Optional[np.ndarray], optional): User-defined sample weights. Defaults to None.
         """
+
+        self._validate_inputs(X, y)
         if sample_weight is not None:
             w = sample_weight  # Align to sklearn API
         else:
@@ -522,8 +608,13 @@ class OnlineGamlss(Estimator):
         }
 
         if self.debug:
-            self.X_dict = X_dict
-            self.X_scaled = X_scaled
+            self._debug_X_dict = X_dict
+            self._debug_X_scaled = X_scaled
+            self._debug_weights = {}
+            self._debug_working_vectors = {}
+            self._debug_dl1dlp1 = {}
+            self._debug_dl2dlp2 = {}
+            self._debug_eta = {}
 
         ## Reset rss and iterations
         self.rss_iterations_inner = {i: {} for i in range(self.distribution.n_params)}
@@ -703,6 +794,14 @@ class OnlineGamlss(Estimator):
             wt = np.clip(wt, 1e-10, 1e10)
             wv = eta + dl1dp1 / (dr * wt)
 
+            if self.debug:
+                key = (param, iteration_outer, iteration_outer)
+                self._debug_weights[key] = wt
+                self._debug_working_vectors[key] = wv
+                self._debug_dl1dlp1[key] = dl1dp1
+                self._debug_dl2dlp2[key] = dl2dp2
+                self._debug_eta[key] = eta
+
             ## Update the X and Y Gramian and the weight
             self.x_gram[param] = self._method[param].init_x_gram(
                 X=X[param], weights=(w * wt), forget=self.forget[param]
@@ -794,6 +893,14 @@ class OnlineGamlss(Estimator):
             wt = np.clip(wt, -1e10, 1e10)
             wv = eta + dl1dp1 / (dr * wt)
 
+            if self.debug:
+                key = (param, iteration_outer, iteration_outer)
+                self._debug_weights[key] = wt
+                self._debug_working_vectors[key] = wv
+                self._debug_dl1dlp1[key] = dl1dp1
+                self._debug_dl2dlp2[key] = dl2dp2
+                self._debug_eta[key] = eta
+
             self.x_gram_inner[param] = self._method[param].update_x_gram(
                 gram=self.x_gram[param],
                 X=X[param],
@@ -869,7 +976,7 @@ class OnlineGamlss(Estimator):
         Returns:
             np.ndarray: Predicted values for the distribution.
         """
-        X_scaled = self.scaler.transform(x=X)
+        X_scaled = self.scaler.transform(X=X)
         X_dict = {
             p: self.make_model_array(X_scaled, p)
             for p in range(self.distribution.n_params)

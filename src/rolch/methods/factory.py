@@ -1,7 +1,6 @@
 import copy
 
-from rolch.base import EstimationMethod
-
+from ..base import EstimationMethod
 from .lasso_path import LassoPathMethod
 from .recursive_least_squares import OrdinaryLeastSquaresMethod
 
@@ -31,5 +30,4 @@ def get_estimation_method(method: EstimationMethod | str):
         out = copy.copy(method)
     else:
         raise ValueError("Method not recognized")
-    return out
     return out
