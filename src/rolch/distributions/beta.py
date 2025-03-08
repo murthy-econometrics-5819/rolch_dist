@@ -1,3 +1,5 @@
+from typing import Optional, Tuple
+
 import numpy as np
 import scipy.special as spc
 import scipy.stats as st
@@ -50,108 +52,104 @@ class DistributionBeta(Distribution):
         scale_link (LinkFunction, optional): The link function for $\sigma$. Defaults to LogLink().
     """
 
+    corresponding_gamlss: str = "BE"
+
+    parameter_names = {0: "mu", 1: "sigma"}
+    parameter_support = {
+        0: ( np.nextafter(0, 1), np.inf ),
+        1: (np.nextafter(0, 1), np.inf),
+    }
+    distribution_support = (np.nextafter(0, 1), np.nextafter(1, 0) )
+    # Scipy equivalent and parameter mapping rolch -> scipy
+    scipy_dist = st.beta
+    # Theta columns do not map 1:1 to scipy parameters for gamma
+    # So we have to overload theta_to_scipy_params
+    scipy_names = {}
+
     def __init__(
-        self, loc_link: LinkFunction = LogitLink(), scale_link: LinkFunction = LogLink()
-    ):
-        self.loc_link = loc_link
-        self.scale_link = scale_link
-        # Set up links as dict
-        self.links = {0: self.loc_link, 1: self.scale_link}
-        # Set distribution params
-        self.n_params = 2
-        self.corresponding_gamlss = "BE"
-        self.scipy_dist = st.beta
+        self,
+        loc_link: LinkFunction = LogitLink(),
+        scale_link: LinkFunction = LogLink(),
+    ) -> None:
+        super().__init__(links={0: loc_link, 1: scale_link})
 
-    def theta_to_params(self, theta):
-        mu = theta[:, 0]
-        sigma = theta[:, 1]
-        return mu, sigma
-
-    @staticmethod 
-    def gamlss_to_scipy(mu: np.ndarray, sigma: np.ndarray):
+    def theta_to_scipy_params(self, theta: np.ndarray) -> dict:
         """Map GAMLSS Parameters to scipy parameters.
 
         Args:
-            mu (np.ndarray): mu parameter
-            sigma (np.ndarray): sigma parameter
+            theta (np.ndarray): parameters
 
         Returns:
-            tuple: Tuple of (alpha, loc, scale) for scipy.stats.gamma(alpha, loc, scale)
+            dict: Dict of (a, b, loc, scale) for scipy.stats.beta(a, b, loc, scale)
         """
-        alpha = mu*(1 - sigma**2)/sigma**2
-        beta = (1-mu)*(1 - sigma**2)/sigma**2
-        loc = 0
-        scale = 1 / (alpha + beta + 1)
-        return alpha, loc, scale
+        mu = theta[:, 0]
+        sigma = theta[:, 1]
+        alpha = mu * (1 - sigma**2) / sigma**2
+        beta = (1 - mu) * (1 - sigma**2) / sigma**2
+        params = {"a": alpha, "b": beta, "loc": 0, "scale": 1}
+        return params
 
-    def dl1_dp1(self, y, theta, param=0):  
+    def dl1_dp1(self, y: np.ndarray, theta: np.ndarray, param: int = 0) -> np.ndarray:
+        self._validate_dln_dpn_inputs(y, theta, param)
         mu, sigma = self.theta_to_params(theta)
 
         if param == 0:
-            return ((1-sigma**2)/(sigma**2))*( -spc.digamma(mu*(1-sigma**2)/(sigma**2))
-                + spc.digamma((1-mu)*(1-sigma**2)/(sigma**2)) + np.log(y) - np.log(1-y) )
+            alpha = mu * (1 - sigma**2) / sigma**2
+            beta = (1 - mu) * (1 - sigma**2) / sigma**2
+
+            return ((1 - sigma**2) / sigma**2) * ( 
+                -spc.digamma(alpha) + spc.digamma(beta) + 
+                np.log(y) - np.log(1-y)
+                )
 
         if param == 1:
-            return (2 / sigma**3) * (
-                (y / mu)
-                - np.log(y)
-                + np.log(mu)
-                + np.log(sigma**2)
-                - 1
-                + spc.digamma(1 / (sigma**2))
-            )
+            alpha = mu * (1 - sigma**2) / sigma**2
+            beta = (1 - mu) * (1 - sigma**2) / sigma**2
 
-    def dl2_dp2(self, y, theta, param=0):    
+            return -(2 / sigma**3) * ( 
+                mu * ( -spc.digamma(alpha) + spc.digamma(alpha + beta) + np.log(y)) + (1 - mu) * ( 
+                ( -spc.digamma(beta) + spc.digamma(alpha + beta) + np.log(1-y) ) ) 
+                )
+
+    def dl2_dp2(self, y: np.ndarray, theta: np.ndarray, param: int = 0) -> np.ndarray:
+        self._validate_dln_dpn_inputs(y, theta, param)
         mu, sigma = self.theta_to_params(theta)
         if param == 0:
             # MU
-            return -(((1-sigma**2)**2)/(sigma**4))*(spc.polygamma(2, mu*(1-sigma**2)/(sigma**2)) + spc.polygamma(2, (1-mu)*(1-sigma**2)/(sigma**2)))
+            alpha = mu * (1 - sigma**2) / sigma**2
+            beta = (1 - mu) * (1 - sigma**2) / sigma**2
+
+            return - ( ( (1 - sigma**2)**2 ) / sigma**4 ) * ( 
+                spc.polygamma(1, alpha) + spc.polygamma(1, beta) )
 
         if param == 1:
             # SIGMA
-            return -(4/(sigma**6))*((mu**2) * spc.polygamma(2, mu*(1-sigma**2)/(sigma**2)) + ((1-mu)**2) * spc.polygamma(2, (1-mu)*(1-sigma**2)/(sigma**2))
-                -spc.polygamma(2, (1-sigma**2)/(sigma**2)))
+            alpha = mu * (1 - sigma**2) / sigma**2
+            beta = (1 - mu) * (1 - sigma**2) / sigma**2
 
-    def dl2_dpp(self, y, theta, params=(0, 1)):  
+            return - (4 / sigma**3) * ( mu**2 * spc.polygamma(1, alpha) + (1-mu)**2 * spc.polygamma(1, beta) -
+                spc.polygamma(1, alpha + beta)
+                )
+
+    def dl2_dpp(
+        self, y: np.ndarray, theta: np.ndarray, params: Tuple[int, int] = (0, 1)
+    ) -> np.ndarray:
+        self._validate_dl2_dpp_inputs(y, theta, params)
         mu, sigma = self.theta_to_params(theta)
+
         if sorted(params) == [0, 1]:
-            return (2*(1-sigma**2)/(sigma**5))*(mu* spc.polygamma(2, mu*(1-sigma**2)/(sigma**2)) 
-                - (1-mu)* spc.polygamma(2, (1-mu)*(1-sigma**2)/(sigma**2)))
+            alpha = mu * (1 - sigma**2) / sigma**2
+            beta = (1 - mu) * (1 - sigma**2) / sigma**2
 
-    def link_function(self, y, param=0):   ###this has to be changed!!!!
-        return self.links[param].link(y)
+            return ( 2*(1 - sigma**2) / sigma**5 ) * ( 
+                mu*spc.polygamma(1, alpha) - (1 - mu) * 
+                spc.polygamma(1, beta)
+                )
 
-    def link_inverse(self, y, param=0):    ###this has to be changed!!!!
-        return self.links[param].inverse(y)
-
-    def link_function_derivative(self, y: np.ndarray, param: int = 0) -> np.ndarray:    ###this has to be changed!!!!
-        return self.links[param].link_derivative(y)
-
-    def link_inverse_derivative(self, y: np.ndarray, param: int = 0) -> np.ndarray:    ###this has to be changed!!!!
-        return self.links[param].inverse_derivative(y)
-
-    def initial_values(self, y, param=0, axis=None):         ###change or leave unchanged
+    def initial_values(
+        self, y: np.ndarray, param: int = 0, axis: Optional[int | None] = None
+    ) -> np.ndarray:
         if param == 0:
-            return (y + np.mean(y, axis=None)) / 2
+            return np.repeat(np.mean(y, axis=None), y.shape[0])
         if param == 1:
             return np.ones_like(y)
-
-    def cdf(self, y, theta):
-        mu, sigma = self.theta_to_params(theta)
-        return self.scipy_dist(*self.gamlss_to_scipy(mu, sigma)).cdf(y)
-
-    def pdf(self, y, theta):
-        mu, sigma = self.theta_to_params(theta)
-        return self.scipy_dist(*self.gamlss_to_scipy(mu, sigma)).pdf(y)
-
-    def ppf(self, q, theta):
-        mu, sigma = self.theta_to_params(theta)
-        return self.scipy_dist(*self.gamlss_to_scipy(mu, sigma)).ppf(q)
-
-    def rvs(self, size, theta):
-        mu, sigma = self.theta_to_params(theta)
-        return (
-            self.scipy_dist(*self.gamlss_to_scipy(mu, sigma))
-            .rvs((size, theta.shape[0]))
-            .T
-        )
