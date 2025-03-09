@@ -24,6 +24,7 @@ from .distributions import (
     DistributionT,
     DistributionExponential, 
     DistributionBeta, 
+    DistributionBetDebug,
 )
 from .error import OutOfSupportError
 from .estimators import OnlineGamlss, OnlineLasso, OnlineLinearModel
@@ -85,6 +86,7 @@ __all__ = [
     "DistributionGamma",
     "DistributionExponential",
     "DistributionBeta",
+    "DistributionBetaDebug",
     "init_forget_vector",
     "init_gram",
     "update_gram",
