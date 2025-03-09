@@ -4,7 +4,7 @@ from .normal import DistributionNormal
 from .studentt import DistributionT
 from .exponential import DistributionExponential
 from .beta import DistributionBeta
-from .beta_debug import DistributionBetDebug
+from .beta_debug import DistributionBetaDebug
 
 __all__ = [
     "DistributionNormal",
