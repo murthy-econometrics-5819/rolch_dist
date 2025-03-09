@@ -62,7 +62,7 @@ class DistributionBetDebug(Distribution):
     distribution_support = (np.nextafter(0, 1), np.nextafter(1, 0) )
     # Scipy equivalent and parameter mapping rolch -> scipy
     scipy_dist = st.beta
-    # Theta columns do not map 1:1 to scipy parameters for gamma
+    # Theta columns do not map 1:1 to scipy parameters for beta
     # So we have to overload theta_to_scipy_params
     scipy_names = {}
 
@@ -86,7 +86,7 @@ class DistributionBetDebug(Distribution):
         sigma = theta[:, 1]
         alpha = mu * (1 - sigma**2) / sigma**2
         beta = (1 - mu) * (1 - sigma**2) / sigma**2
-        params = {"a": alpha, "b": beta, "loc": 0, "scale": 1}
+        params = {"a": alpha, "loc": 0, "scale": beta}
         return params
 
     def dl1_dp1(self, y: np.ndarray, theta: np.ndarray, param: int = 0) -> np.ndarray:

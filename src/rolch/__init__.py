@@ -24,7 +24,7 @@ from .distributions import (
     DistributionT,
     DistributionExponential, 
     DistributionBeta, 
-    DistributionBetDebug,
+    DistributionBetaDebug,
 )
 from .error import OutOfSupportError
 from .estimators import OnlineGamlss, OnlineLasso, OnlineLinearModel
