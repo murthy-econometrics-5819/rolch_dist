@@ -8,7 +8,7 @@ from rolch.base import Distribution, LinkFunction
 from rolch.link import LogitLink, LogLink
 
 
-class DistributionBetDebug(Distribution):
+class DistributionBetaDebug(Distribution):
     """The Beta Distribution for GAMLSS.
 
     The distribution function is defined as in GAMLSS as:
