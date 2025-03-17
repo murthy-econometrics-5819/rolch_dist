@@ -97,11 +97,11 @@ class DistributionBetaDebug(ScipyMixin, Distribution):
             alpha = mu * (1 - sigma**2) / sigma**2
             beta = (1 - mu) * (1 - sigma**2) / sigma**2
 
-            return ((1 - sigma**2) / sigma**2) * ( 
+            '''return ((1 - sigma**2) / sigma**2) * ( 
                 -spc.digamma(alpha) + spc.digamma(beta) + 
                 np.log(y) - np.log(1-y)
-                )
-            #return (1 / sigma**2) * (y - mu)
+                )'''
+            return (1 / sigma**2) * (y - mu)            ##gamma -- so it doesn't break
 
         if param == 1:
             alpha = mu * (1 - sigma**2) / sigma**2
@@ -110,7 +110,7 @@ class DistributionBetaDebug(ScipyMixin, Distribution):
             return -(2 / sigma**3) * ( 
                 mu * ( -spc.digamma(alpha) + spc.digamma(alpha + beta) + np.log(y)) + (1 - mu) * ( 
                 ( -spc.digamma(beta) + spc.digamma(alpha + beta) + np.log(1-y) ) ) 
-                )
+                )                                    
             
 
     def dl2_dp2(self, y: np.ndarray, theta: np.ndarray, param: int = 0) -> np.ndarray:
