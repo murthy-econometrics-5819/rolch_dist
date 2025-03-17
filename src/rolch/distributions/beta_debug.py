@@ -97,11 +97,11 @@ class DistributionBetaDebug(ScipyMixin, Distribution):
             alpha = mu * (1 - sigma**2) / sigma**2
             beta = (1 - mu) * (1 - sigma**2) / sigma**2
 
-            '''return ((1 - sigma**2) / sigma**2) * ( 
+            return ((1 - sigma**2) / sigma**2) * ( 
                 -spc.digamma(alpha) + spc.digamma(beta) + 
                 np.log(y) - np.log(1-y)
-                )'''
-            return (1 / sigma**2) * (y - mu)
+                )
+            #return (1 / sigma**2) * (y - mu)
 
         if param == 1:
             alpha = mu * (1 - sigma**2) / sigma**2
@@ -123,6 +123,7 @@ class DistributionBetaDebug(ScipyMixin, Distribution):
 
             return - ( ( (1 - sigma**2)**2 ) / sigma**4 ) * ( 
                 spc.polygamma(1, alpha) + spc.polygamma(1, beta) )
+             
 
         if param == 1:
             # SIGMA
