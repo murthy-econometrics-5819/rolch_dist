@@ -4,11 +4,11 @@ import numpy as np
 import scipy.special as spc
 import scipy.stats as st
 
-from rolch.base import Distribution, LinkFunction
-from rolch.link import LogitLink, LogLink
+from ..base import Distribution, LinkFunction, ScipyMixin
+from ..link import LogitLink, LogLink
 
 
-class DistributionBetaDebug(Distribution):
+class DistributionBetaDebug(ScipyMixin, Distribution):
     """The Beta Distribution for GAMLSS.
 
     The distribution function is defined as in GAMLSS as:
