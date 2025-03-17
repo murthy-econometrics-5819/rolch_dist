@@ -86,7 +86,7 @@ class DistributionBetaDebug(ScipyMixin, Distribution):
         sigma = theta[:, 1]
         alpha = mu * (1 - sigma**2) / sigma**2
         beta = (1 - mu) * (1 - sigma**2) / sigma**2
-        params = {"a": alpha, "loc": 0, "scale": beta}
+        params = {"a": alpha, "b": beta, "loc": 0, "scale": 1}
         return params
 
     def dl1_dp1(self, y: np.ndarray, theta: np.ndarray, param: int = 0) -> np.ndarray:
