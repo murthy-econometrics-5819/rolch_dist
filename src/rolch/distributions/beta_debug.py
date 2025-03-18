@@ -101,10 +101,15 @@ class DistributionBetaDebug(ScipyMixin, Distribution):
             alpha = mu * (1 - sigma**2) / sigma**2
             beta = (1 - mu) * (1 - sigma**2) / sigma**2
 
-            return ((1 - sigma**2) / sigma**2) * ( 
+            '''return ((1 - sigma**2) / sigma**2) * ( 
                 -spc.digamma(alpha) + spc.digamma(beta) + 
                 np.log(np.fmax(y, LOG_LOWER_BOUND)) - np.log(np.fmax(1-y, LOG_LOWER_BOUND))
-                )  
+                )'''
+            return ((1 - sigma**2) / sigma**2) * ( 
+                ###checking if it still breaks without the digamma function
+                np.log(np.fmax(y, LOG_LOWER_BOUND)) - np.log(np.fmax(1-y, LOG_LOWER_BOUND))
+                )
+
             #return (1 / sigma**2) * (y - mu)            ##gamma -- so it doesn't break
 
         if param == 1:
