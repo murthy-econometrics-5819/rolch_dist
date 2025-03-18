@@ -7,6 +7,10 @@ import scipy.stats as st
 from ..base import Distribution, LinkFunction, ScipyMixin
 from ..link import LogitLink, LogLink
 
+LOG_LOWER_BOUND = 1e-25
+EXP_UPPER_BOUND = 25
+SMALL_NUMBER = 1e-10
+
 
 class DistributionBetaDebug(ScipyMixin, Distribution):
     """The Beta Distribution for GAMLSS.
@@ -97,11 +101,11 @@ class DistributionBetaDebug(ScipyMixin, Distribution):
             alpha = mu * (1 - sigma**2) / sigma**2
             beta = (1 - mu) * (1 - sigma**2) / sigma**2
 
-            '''return ((1 - sigma**2) / sigma**2) * ( 
+            return ((1 - sigma**2) / sigma**2) * ( 
                 -spc.digamma(alpha) + spc.digamma(beta) + 
-                np.log(y) - np.log(1-y)
-                )'''
-            return (1 / sigma**2) * (y - mu)            ##gamma -- so it doesn't break
+                np.log(np.fmax(y, LOG_LOWER_BOUND)) - np.log(np.fmax(1-y, LOG_LOWER_BOUND))
+                )  
+            #return (1 / sigma**2) * (y - mu)            ##gamma -- so it doesn't break
 
         if param == 1:
             alpha = mu * (1 - sigma**2) / sigma**2
@@ -121,9 +125,9 @@ class DistributionBetaDebug(ScipyMixin, Distribution):
             alpha = mu * (1 - sigma**2) / sigma**2
             beta = (1 - mu) * (1 - sigma**2) / sigma**2
 
-            #return - ( ( (1 - sigma**2)**2 ) / sigma**4 ) * ( 
-                #spc.polygamma(1, alpha) + spc.polygamma(1, beta) )
-            return -1 / ((sigma**2) * (mu**2))      ### gamma --- so it doesn't break 
+            return - ( ( (1 - sigma**2)**2 ) / sigma**4 ) * ( 
+                spc.polygamma(1, alpha) + spc.polygamma(1, beta) )
+            #return -1 / ((sigma**2) * (mu**2))      ### gamma --- so it doesn't break -- but it does in a weird way
              
 
         if param == 1:
