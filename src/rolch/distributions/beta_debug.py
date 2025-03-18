@@ -125,9 +125,9 @@ class DistributionBetaDebug(ScipyMixin, Distribution):
             alpha = mu * (1 - sigma**2) / sigma**2
             beta = (1 - mu) * (1 - sigma**2) / sigma**2
 
-            return - ( ( (1 - sigma**2)**2 ) / sigma**4 ) * ( 
-                spc.polygamma(1, alpha) + spc.polygamma(1, beta) )
-            #return -1 / ((sigma**2) * (mu**2))      ### gamma --- so it doesn't break -- but it does in a weird way
+            #return - ( ( (1 - sigma**2)**2 ) / sigma**4 ) * ( 
+                #spc.polygamma(1, alpha) + spc.polygamma(1, beta) )
+            return -1 / ((sigma**2) * (mu**2))      ### gamma --- so it doesn't break -- but it does in a weird way
              
 
         if param == 1:
