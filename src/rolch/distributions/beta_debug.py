@@ -106,9 +106,9 @@ class DistributionBetaDebug(ScipyMixin, Distribution):
                 np.log(np.fmax(y, LOG_LOWER_BOUND)) - np.log(np.fmax(1-y, LOG_LOWER_BOUND))
                 )'''
             return ((1 - sigma**2) / sigma**2) * ( 
-                -spc.digamma(alpha) + spc.digamma(np.fmax(beta, SMALL_NUMBER)) + 
+                -spc.digamma(np.fmax(alpha, SMALL_NUMBER)) + spc.digamma(np.fmax(beta, SMALL_NUMBER)) + 
                 np.log(np.fmax(y, LOG_LOWER_BOUND)) - np.log(np.fmax(1-y, LOG_LOWER_BOUND))
-                )                                     ###beta dist with bound on digamma beta param
+                )                                     ###beta dist with bounds on digamma 
 
             #return (1 / sigma**2) * (y - mu)            ##gamma -- so it doesn't break
 
