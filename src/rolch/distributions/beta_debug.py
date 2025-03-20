@@ -116,10 +116,17 @@ class DistributionBetaDebug(ScipyMixin, Distribution):
             alpha = mu * (1 - sigma**2) / sigma**2
             beta = (1 - mu) * (1 - sigma**2) / sigma**2
 
-            return -(2 / sigma**3) * ( 
+            '''return -(2 / sigma**3) * ( 
                 mu * ( -spc.digamma(alpha) + spc.digamma(alpha + beta) + np.log(y)) + (1 - mu) * ( 
                 ( -spc.digamma(beta) + spc.digamma(alpha + beta) + np.log(1-y) ) ) 
-                )                                    ##beta -- doesn't break
+                )'''                                    ##beta -- breaks without bounds
+        
+            return -(2 / sigma**3) * ( 
+                mu * ( -spc.digamma(np.fmax(alpha, SMALL_NUMBER)) + spc.digamma(np.fmax(alpha + beta, SMALL_NUMBER)) + 
+                np.log(np.fmax(y, LOG_LOWER_BOUND))) + (1 - mu) * ( 
+                ( -spc.digamma(np.fmax(beta, SMALL_NUMBER)) + spc.digamma(np.fmax(alpha + beta, SMALL_NUMBER)) 
+                + np.log(np.fmax(1-y, LOG_LOWER_BOUND)) ) ) 
+                )
             
 
     def dl2_dp2(self, y: np.ndarray, theta: np.ndarray, param: int = 0) -> np.ndarray:
@@ -130,9 +137,9 @@ class DistributionBetaDebug(ScipyMixin, Distribution):
             alpha = mu * (1 - sigma**2) / sigma**2
             beta = (1 - mu) * (1 - sigma**2) / sigma**2
 
-            #return - ( ( (1 - sigma**2)**2 ) / sigma**4 ) * ( 
-                #spc.polygamma(1, alpha) + spc.polygamma(1, beta) )
-            return -1 / ((sigma**2) * (mu**2))      ### gamma --- so it doesn't break -- but it does in a weird way
+            return - ( ( (1 - sigma**2)**2 ) / sigma**4 ) * ( 
+                spc.polygamma(1, alpha) + spc.polygamma(1, beta) )
+            #return -1 / ((sigma**2) * (mu**2))      ### gamma --- so it doesn't break -- but it does in a weird way
              
 
         if param == 1:
@@ -142,7 +149,7 @@ class DistributionBetaDebug(ScipyMixin, Distribution):
 
             return - (4 / sigma**3) * ( mu**2 * spc.polygamma(1, alpha) + (1-mu)**2 * spc.polygamma(1, beta) -
                 spc.polygamma(1, alpha + beta)
-                )
+                )          ####breaks here for log link instead of logit 
 
     def dl2_dpp(
         self, y: np.ndarray, theta: np.ndarray, params: Tuple[int, int] = (0, 1)
