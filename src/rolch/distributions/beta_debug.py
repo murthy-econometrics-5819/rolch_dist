@@ -11,6 +11,8 @@ LOG_LOWER_BOUND = 1e-25
 EXP_UPPER_BOUND = 25
 SMALL_NUMBER = 1e-3
 LARGE_NUMBER = 1e+3 
+SMALL_NUMBER_OUTPUT = 1e-3
+LARGE_NUMBER_OUTPUT = 1250 
 
 class DistributionBetaDebug(ScipyMixin, Distribution):
     """The Beta Distribution for GAMLSS.
@@ -164,10 +166,18 @@ class DistributionBetaDebug(ScipyMixin, Distribution):
                 spc.polygamma(1, alpha + beta)
                 )'''         ####breaks here for log link instead of logit 
         
-            return - (4 / sigma**3) * ( mu**2 * spc.polygamma(1, np.fmax(alpha, SMALL_NUMBER)) + (1-mu)**2 * 
+            '''return - (4 / sigma**3) * ( mu**2 * spc.polygamma(1, np.fmax(alpha, SMALL_NUMBER)) + (1-mu)**2 * 
                 spc.polygamma(1, np.fmax(beta, SMALL_NUMBER)) -
                 spc.polygamma(1, np.fmax(alpha + beta, SMALL_NUMBER))
-                )
+                )'''
+            return - (4 / sigma**3) * ( 
+                mu**2 * 
+                np.fmin(spc.polygamma(1, alpha), SMALL_NUMBER_OUTPUT) + 
+                (1-mu)**2 * 
+                np.fmin(spc.polygamma(1, beta), SMALL_NUMBER_OUTPUT) -
+                np.fmin(spc.polygamma(1, alpha + beta), SMALL_NUMBER_OUTPUT)   
+                )                  ###bounded output instead of input 
+            
 
     def dl2_dpp(
         self, y: np.ndarray, theta: np.ndarray, params: Tuple[int, int] = (0, 1)
