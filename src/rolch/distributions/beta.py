@@ -12,7 +12,7 @@ EXP_UPPER_BOUND = 25
 SMALL_NUMBER = 1e-10
 LARGE_NUMBER = 1e+10 
 
-class DistributionBetaDebug(ScipyMixin, Distribution):
+class DistributionBeta(ScipyMixin, Distribution):
     """The Beta Distribution for GAMLSS.
 
     The distribution function is defined as in GAMLSS as:
