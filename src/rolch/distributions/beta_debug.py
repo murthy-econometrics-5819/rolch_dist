@@ -8,7 +8,7 @@ from ..base import Distribution, LinkFunction, ScipyMixin
 from ..link import LogitLink, LogLink
 
 LOG_LOWER_BOUND = 1e-25
-EXP_UPPER_BOUND = 25
+EXP_UPPER_BOUND = 30
 SMALL_NUMBER = 1e-10
 LARGE_NUMBER = 1e+10 
 
