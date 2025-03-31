@@ -9,7 +9,7 @@ from ..link import LogitLink, LogLink
 
 LOG_LOWER_BOUND = 1e-25
 EXP_UPPER_BOUND = 30
-SMALL_NUMBER = 1e-10
+SMALL_NUMBER = 1e-3
 LARGE_NUMBER = 1e+10 
 
 class DistributionBetaDebug(ScipyMixin, Distribution):
@@ -121,13 +121,22 @@ class DistributionBetaDebug(ScipyMixin, Distribution):
                 ( -spc.digamma(beta) + spc.digamma(alpha + beta) + np.log(1-y) ) ) 
                 )'''                                    ##beta -- breaks without bounds
         
+            '''return -(2 / sigma**3) * ( 
+                mu * ( -spc.digamma(np.fmax(alpha, SMALL_NUMBER)) + spc.digamma(np.fmax(alpha + beta, SMALL_NUMBER)) + 
+                np.log(np.fmax(y, LOG_LOWER_BOUND))) + (1 - mu) * ( 
+                ( -spc.digamma(np.fmax(beta, SMALL_NUMBER)) + spc.digamma(np.fmax(alpha + beta, SMALL_NUMBER)) 
+                + np.log(np.fmax(1-y, LOG_LOWER_BOUND)) ) ) 
+                )'''
             return -(2 / sigma**3) * ( 
                 mu * ( -spc.digamma(np.fmax(alpha, SMALL_NUMBER)) + spc.digamma(np.fmax(alpha + beta, SMALL_NUMBER)) + 
                 np.log(np.fmax(y, LOG_LOWER_BOUND))) + (1 - mu) * ( 
                 ( -spc.digamma(np.fmax(beta, SMALL_NUMBER)) + spc.digamma(np.fmax(alpha + beta, SMALL_NUMBER)) 
                 + np.log(np.fmax(1-y, LOG_LOWER_BOUND)) ) ) 
                 )
-            
+
+
+
+
 
     def dl2_dp2(self, y: np.ndarray, theta: np.ndarray, param: int = 0) -> np.ndarray:
         self._validate_dln_dpn_inputs(y, theta, param)
