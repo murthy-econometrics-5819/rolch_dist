@@ -130,10 +130,14 @@ class DistributionBetaDebug(ScipyMixin, Distribution):
                 + np.log(np.fmax(1-y, LOG_LOWER_BOUND)) ) ) 
                 )'''
             return -(2 / sigma**3) * ( 
-                mu * ( -spc.digamma(np.fmax(alpha, SMALL_NUMBER)) + spc.digamma(np.fmax(alpha + beta, SMALL_NUMBER)) + 
+                mu * ( 
+                -np.fmax(spc.digamma(alpha), SMALL_NUMBER_OUTPUT) + 
+                np.fmax(spc.digamma(alpha + beta), SMALL_NUMBER_OUTPUT) + 
                 np.log(np.fmax(y, LOG_LOWER_BOUND))) + (1 - mu) * ( 
-                ( -spc.digamma(np.fmax(beta, SMALL_NUMBER)) + spc.digamma(np.fmax(alpha + beta, SMALL_NUMBER)) 
-                + np.log(np.fmax(1-y, LOG_LOWER_BOUND)) ) ) 
+                ( 
+                -np.fmax(spc.digamma(beta), SMALL_NUMBER_OUTPUT) + 
+                np.fmax(spc.digamma(alpha + beta), SMALL_NUMBER_OUTPUT) + 
+                np.log(np.fmax(1-y, LOG_LOWER_BOUND)) ) )  
                 )
 
 
@@ -172,10 +176,10 @@ class DistributionBetaDebug(ScipyMixin, Distribution):
                 )'''
             return - (4 / sigma**3) * ( 
                 mu**2 * 
-                np.fmin(spc.polygamma(1, alpha), SMALL_NUMBER_OUTPUT) + 
+                np.fmin(spc.polygamma(1, alpha), LARGE_NUMBER_OUTPUT) + 
                 (1-mu)**2 * 
-                np.fmin(spc.polygamma(1, beta), SMALL_NUMBER_OUTPUT) -
-                np.fmin(spc.polygamma(1, alpha + beta), SMALL_NUMBER_OUTPUT)   
+                np.fmin(spc.polygamma(1, beta), LARGE_NUMBER_OUTPUT) -
+                np.fmin(spc.polygamma(1, alpha + beta), LARGE_NUMBER_OUTPUT)   
                 )                  ###bounded output instead of input 
             
 
