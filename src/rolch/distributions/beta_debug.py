@@ -193,9 +193,15 @@ class DistributionBetaDebug(ScipyMixin, Distribution):
             alpha = mu * (1 - sigma**2) / sigma**2
             beta = (1 - mu) * (1 - sigma**2) / sigma**2
 
-            return ( 2*(1 - sigma**2) / sigma**5 ) * ( 
+            '''return ( 2*(1 - sigma**2) / sigma**5 ) * ( 
                 mu*spc.polygamma(1, np.fmax(alpha, SMALL_NUMBER)) - (1 - mu) * 
                 spc.polygamma(1, np.fmax(beta, SMALL_NUMBER))
+                )'''
+            return ( 2*(1 - sigma**2) / sigma**5 ) * ( 
+                mu*
+                np.fmin(spc.polygamma(1, alpha), LARGE_NUMBER_OUTPUT) - 
+                (1 - mu) * 
+                np.fmin(spc.polygamma(1, beta), LARGE_NUMBER_OUTPUT)
                 )
 
     def initial_values(
