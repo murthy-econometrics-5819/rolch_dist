@@ -8,9 +8,9 @@ from ..base import Distribution, LinkFunction, ScipyMixin
 from ..link import LogitLink, LogLink
 
 LOG_LOWER_BOUND = 1e-25
-EXP_UPPER_BOUND = 30
+EXP_UPPER_BOUND = 25
 SMALL_NUMBER = 1e-3
-LARGE_NUMBER = 1e+10 
+LARGE_NUMBER = 1e+3 
 
 class DistributionBetaDebug(ScipyMixin, Distribution):
     """The Beta Distribution for GAMLSS.
