@@ -9,10 +9,8 @@ from ..link import LogitLink, LogLink
 
 LOG_LOWER_BOUND = 1e-25
 EXP_UPPER_BOUND = 25
-SMALL_NUMBER = 1e-3
-LARGE_NUMBER = 1e+3 
-SMALL_NUMBER_OUTPUT = 1e-3
-LARGE_NUMBER_OUTPUT = 1250 
+SMALL_NUMBER = 1e-10
+LARGE_NUMBER = 1e+10 
 
 class DistributionBetaDebug(ScipyMixin, Distribution):
     """The Beta Distribution for GAMLSS.
@@ -123,26 +121,13 @@ class DistributionBetaDebug(ScipyMixin, Distribution):
                 ( -spc.digamma(beta) + spc.digamma(alpha + beta) + np.log(1-y) ) ) 
                 )'''                                    ##beta -- breaks without bounds
         
-            '''return -(2 / sigma**3) * ( 
+            return -(2 / sigma**3) * ( 
                 mu * ( -spc.digamma(np.fmax(alpha, SMALL_NUMBER)) + spc.digamma(np.fmax(alpha + beta, SMALL_NUMBER)) + 
                 np.log(np.fmax(y, LOG_LOWER_BOUND))) + (1 - mu) * ( 
                 ( -spc.digamma(np.fmax(beta, SMALL_NUMBER)) + spc.digamma(np.fmax(alpha + beta, SMALL_NUMBER)) 
                 + np.log(np.fmax(1-y, LOG_LOWER_BOUND)) ) ) 
-                )'''
-            return -(2 / sigma**3) * ( 
-                mu * ( 
-                -np.fmax(spc.digamma(alpha), SMALL_NUMBER_OUTPUT) + 
-                np.fmax(spc.digamma(alpha + beta), SMALL_NUMBER_OUTPUT) + 
-                np.log(np.fmax(y, LOG_LOWER_BOUND))) + (1 - mu) * ( 
-                ( 
-                -np.fmax(spc.digamma(beta), SMALL_NUMBER_OUTPUT) + 
-                np.fmax(spc.digamma(alpha + beta), SMALL_NUMBER_OUTPUT) + 
-                np.log(np.fmax(1-y, LOG_LOWER_BOUND)) ) )  
                 )
-
-
-
-
+            
 
     def dl2_dp2(self, y: np.ndarray, theta: np.ndarray, param: int = 0) -> np.ndarray:
         self._validate_dln_dpn_inputs(y, theta, param)
@@ -170,18 +155,10 @@ class DistributionBetaDebug(ScipyMixin, Distribution):
                 spc.polygamma(1, alpha + beta)
                 )'''         ####breaks here for log link instead of logit 
         
-            '''return - (4 / sigma**3) * ( mu**2 * spc.polygamma(1, np.fmax(alpha, SMALL_NUMBER)) + (1-mu)**2 * 
+            return - (4 / sigma**3) * ( mu**2 * spc.polygamma(1, np.fmax(alpha, SMALL_NUMBER)) + (1-mu)**2 * 
                 spc.polygamma(1, np.fmax(beta, SMALL_NUMBER)) -
                 spc.polygamma(1, np.fmax(alpha + beta, SMALL_NUMBER))
-                )'''
-            return - (4 / sigma**3) * ( 
-                mu**2 * 
-                np.fmin(spc.polygamma(1, alpha), LARGE_NUMBER_OUTPUT) + 
-                (1-mu)**2 * 
-                np.fmin(spc.polygamma(1, beta), LARGE_NUMBER_OUTPUT) -
-                np.fmin(spc.polygamma(1, alpha + beta), LARGE_NUMBER_OUTPUT)   
-                )                  ###bounded output instead of input 
-            
+                )
 
     def dl2_dpp(
         self, y: np.ndarray, theta: np.ndarray, params: Tuple[int, int] = (0, 1)
@@ -193,21 +170,15 @@ class DistributionBetaDebug(ScipyMixin, Distribution):
             alpha = mu * (1 - sigma**2) / sigma**2
             beta = (1 - mu) * (1 - sigma**2) / sigma**2
 
-            '''return ( 2*(1 - sigma**2) / sigma**5 ) * ( 
+            return ( 2*(1 - sigma**2) / sigma**5 ) * ( 
                 mu*spc.polygamma(1, np.fmax(alpha, SMALL_NUMBER)) - (1 - mu) * 
                 spc.polygamma(1, np.fmax(beta, SMALL_NUMBER))
-                )'''
-            return ( 2*(1 - sigma**2) / sigma**5 ) * ( 
-                mu*
-                np.fmin(spc.polygamma(1, alpha), LARGE_NUMBER_OUTPUT) - 
-                (1 - mu) * 
-                np.fmin(spc.polygamma(1, beta), LARGE_NUMBER_OUTPUT)
                 )
 
     def initial_values(
         self, y: np.ndarray, param: int = 0, axis: Optional[int | None] = None
     ) -> np.ndarray:
         if param == 0:
-            return np.repeat(np.mean(y, axis=None), y.shape[0])
+            return np.repeat((y + np.mean(y, axis=None))/2, y.shape[0])
         if param == 1:
-            return np.repeat(np.std(y, axis=axis), y.shape[0])
+            return np.repeat(0.5, y.shape[0])
