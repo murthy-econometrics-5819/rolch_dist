@@ -4,11 +4,15 @@ import numpy as np
 import scipy.special as spc
 import scipy.stats as st
 
-from rolch.base import Distribution, LinkFunction
-from rolch.link import LogitLink, LogLink
+from ..base import Distribution, LinkFunction, ScipyMixin
+from ..link import LogitLink, LogLink
 
+LOG_LOWER_BOUND = 1e-25
+EXP_UPPER_BOUND = 25
+SMALL_NUMBER = 1e-10
+LARGE_NUMBER = 1e+10 
 
-class DistributionBeta(Distribution):
+class DistributionBetaDebug(ScipyMixin, Distribution):
     """The Beta Distribution for GAMLSS.
 
     The distribution function is defined as in GAMLSS as:
@@ -62,13 +66,13 @@ class DistributionBeta(Distribution):
     distribution_support = (np.nextafter(0, 1), np.nextafter(1, 0) )
     # Scipy equivalent and parameter mapping rolch -> scipy
     scipy_dist = st.beta
-    # Theta columns do not map 1:1 to scipy parameters for gamma
+    # Theta columns do not map 1:1 to scipy parameters for beta
     # So we have to overload theta_to_scipy_params
     scipy_names = {}
 
     def __init__(
         self,
-        loc_link: LinkFunction = LogitLink(),
+        loc_link: LinkFunction = LogitLink(),   ##logit inverse is breaking 
         scale_link: LinkFunction = LogLink(),
     ) -> None:
         super().__init__(links={0: loc_link, 1: scale_link})
@@ -97,19 +101,33 @@ class DistributionBeta(Distribution):
             alpha = mu * (1 - sigma**2) / sigma**2
             beta = (1 - mu) * (1 - sigma**2) / sigma**2
 
-            return ((1 - sigma**2) / sigma**2) * ( 
+            '''return ((1 - sigma**2) / sigma**2) * ( 
                 -spc.digamma(alpha) + spc.digamma(beta) + 
-                np.log(y) - np.log(1-y)
-                )
+                np.log(np.fmax(y, LOG_LOWER_BOUND)) - np.log(np.fmax(1-y, LOG_LOWER_BOUND))
+                )'''
+            return ((1 - sigma**2) / sigma**2) * ( 
+                -spc.digamma(np.fmax(alpha, SMALL_NUMBER)) + spc.digamma(np.fmax(beta, SMALL_NUMBER)) + 
+                np.log(np.fmax(y, LOG_LOWER_BOUND)) - np.log(np.fmax(1-y, LOG_LOWER_BOUND))
+                )                                     ###beta dist with bounds on digamma 
+
+            #return (1 / sigma**2) * (y - mu)            ##gamma -- so it doesn't break
 
         if param == 1:
             alpha = mu * (1 - sigma**2) / sigma**2
             beta = (1 - mu) * (1 - sigma**2) / sigma**2
 
-            return -(2 / sigma**3) * ( 
+            '''return -(2 / sigma**3) * ( 
                 mu * ( -spc.digamma(alpha) + spc.digamma(alpha + beta) + np.log(y)) + (1 - mu) * ( 
                 ( -spc.digamma(beta) + spc.digamma(alpha + beta) + np.log(1-y) ) ) 
+                )'''                                    ##beta -- breaks without bounds
+        
+            return -(2 / sigma**3) * ( 
+                mu * ( -spc.digamma(np.fmax(alpha, SMALL_NUMBER)) + spc.digamma(np.fmax(alpha + beta, SMALL_NUMBER)) + 
+                np.log(np.fmax(y, LOG_LOWER_BOUND))) + (1 - mu) * ( 
+                ( -spc.digamma(np.fmax(beta, SMALL_NUMBER)) + spc.digamma(np.fmax(alpha + beta, SMALL_NUMBER)) 
+                + np.log(np.fmax(1-y, LOG_LOWER_BOUND)) ) ) 
                 )
+            
 
     def dl2_dp2(self, y: np.ndarray, theta: np.ndarray, param: int = 0) -> np.ndarray:
         self._validate_dln_dpn_inputs(y, theta, param)
@@ -119,16 +137,27 @@ class DistributionBeta(Distribution):
             alpha = mu * (1 - sigma**2) / sigma**2
             beta = (1 - mu) * (1 - sigma**2) / sigma**2
 
+            #return - ( ( (1 - sigma**2)**2 ) / sigma**4 ) * ( 
+                #spc.polygamma(1, alpha) + spc.polygamma(1, beta) )      ##breaks, needs bounds on polygamma
+        
             return - ( ( (1 - sigma**2)**2 ) / sigma**4 ) * ( 
-                spc.polygamma(1, alpha) + spc.polygamma(1, beta) )
+                spc.polygamma(1, np.fmax(alpha, SMALL_NUMBER)) + spc.polygamma(1, np.fmax(beta, SMALL_NUMBER)) ) 
+
+            #return -1 / ((sigma**2) * (mu**2))      ### gamma --- so it doesn't break -- but it does in a weird way
+             
 
         if param == 1:
             # SIGMA
             alpha = mu * (1 - sigma**2) / sigma**2
             beta = (1 - mu) * (1 - sigma**2) / sigma**2
 
-            return - (4 / sigma**3) * ( mu**2 * spc.polygamma(1, alpha) + (1-mu)**2 * spc.polygamma(1, beta) -
+            '''return - (4 / sigma**3) * ( mu**2 * spc.polygamma(1, alpha) + (1-mu)**2 * spc.polygamma(1, beta) -
                 spc.polygamma(1, alpha + beta)
+                )'''         ####breaks here for log link instead of logit 
+        
+            return - (4 / sigma**3) * ( mu**2 * spc.polygamma(1, np.fmax(alpha, SMALL_NUMBER)) + (1-mu)**2 * 
+                spc.polygamma(1, np.fmax(beta, SMALL_NUMBER)) -
+                spc.polygamma(1, np.fmax(alpha + beta, SMALL_NUMBER))
                 )
 
     def dl2_dpp(
@@ -142,8 +171,8 @@ class DistributionBeta(Distribution):
             beta = (1 - mu) * (1 - sigma**2) / sigma**2
 
             return ( 2*(1 - sigma**2) / sigma**5 ) * ( 
-                mu*spc.polygamma(1, alpha) - (1 - mu) * 
-                spc.polygamma(1, beta)
+                mu*spc.polygamma(1, np.fmax(alpha, SMALL_NUMBER)) - (1 - mu) * 
+                spc.polygamma(1, np.fmax(beta, SMALL_NUMBER))
                 )
 
     def initial_values(
