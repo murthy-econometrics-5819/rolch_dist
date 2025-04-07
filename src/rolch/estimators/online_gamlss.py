@@ -34,15 +34,15 @@ class OnlineGamlss(Estimator):
         fit_intercept: Union[bool, Dict[int, bool]] = True,
         regularize_intercept: Union[bool, Dict[int, bool]] = False,
         ic: Union[str, Dict] = "aic",
-        max_it_outer: int = 30,
-        max_it_inner: int = 30,
+        max_it_outer: int = 3,
+        max_it_inner: int = 5,
         abs_tol_outer: float = 1e-3,
         abs_tol_inner: float = 1e-3,
         rel_tol_outer: float = 1e-5,
         rel_tol_inner: float = 1e-5,
         rss_tol_inner: float = 1.5,
         verbose: int = 0,
-        debug: bool = False,
+        debug: bool = True,
     ):
         """The `OnlineGamlss()` provides the fit, update and predict methods for linear parametric GAMLSS models.
 
