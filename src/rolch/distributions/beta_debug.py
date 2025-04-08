@@ -179,6 +179,6 @@ class DistributionBetaDebug(ScipyMixin, Distribution):
         self, y: np.ndarray, param: int = 0, axis: Optional[int | None] = None
     ) -> np.ndarray:
         if param == 0:
-            return (y + np.repeat(np.mean(y, axis=axis), y.shape[0]) )/ 2 
+            return (np.repeat(np.mean(y, axis=axis), y.shape[0]) )/ 2 
         if param == 1:
             return np.repeat(0.5, y.shape[0])
