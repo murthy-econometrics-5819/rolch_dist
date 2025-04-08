@@ -181,4 +181,4 @@ class DistributionBetaDebug(ScipyMixin, Distribution):
         if param == 0:
             return (y + np.repeat(np.mean(y, axis=axis), y.shape[0]) )/ 2 
         if param == 1:
-            return np.repeat(0.75, y.shape[0])
+            return np.repeat(0.5, y.shape[0])
