@@ -60,8 +60,8 @@ class DistributionBetaDebug(ScipyMixin, Distribution):
 
     parameter_names = {0: "mu", 1: "sigma"}
     parameter_support = {
-        0: ( np.nextafter(0, 1), np.inf ),
-        1: (np.nextafter(0, 1), np.inf),
+        0: ( np.nextafter(0, 1), np.nextafter(1, 0)),
+        1: (np.nextafter(0, 1), np.nextafter(1, 0) ),
     }
     distribution_support = (np.nextafter(0, 1), np.nextafter(1, 0) )
     # Scipy equivalent and parameter mapping rolch -> scipy
