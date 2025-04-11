@@ -73,7 +73,7 @@ class DistributionBetaDebug(ScipyMixin, Distribution):
     def __init__(
         self,
         loc_link: LinkFunction = LogitLink(),   ##logit inverse is breaking 
-        scale_link: LinkFunction = LogLink(),
+        scale_link: LinkFunction = LogitLink(),
     ) -> None:
         super().__init__(links={0: loc_link, 1: scale_link})
 
